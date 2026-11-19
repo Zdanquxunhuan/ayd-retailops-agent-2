@@ -61,7 +61,8 @@ class QwenModel implements InvestigationModel {
     Decision selectArchiveTool(String question,List<Map<String,Object>> tools) {
         var context=new Context(question,"","",List.of(),List.of(),List.of(),1,"");
         return choose(context,tools,Duration.ofSeconds(12),
-                "你为日志调查选择一个只读工具。根据问题选择最早一次、最近一次或对比全部回传。"
+                "你为日志调查选择一个只读工具。追问最近一次失败原因选 latestFailure；比较失败原因选 compareFailures。"
+                +"其他历史问题根据范围选择最早一次、最近一次或对比全部回传。"
                 +"问题涉及当前POS状态、执行补单、特定未支持的筛选或含义不清时选 clarify。只选择函数。");
     }
 

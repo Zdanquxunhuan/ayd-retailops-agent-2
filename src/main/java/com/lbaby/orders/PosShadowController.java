@@ -44,16 +44,17 @@ class PosShadowController {
 
     record LogSearch(String orderId, java.time.LocalDate date) {}
 
-    record TraceRequest(String orderId,java.time.LocalDate date,String plannerQuestion) {}
+    record TraceRequest(String orderId,java.time.LocalDate date,String plannerQuestion,ArchiveTraceAgent.FailureQuery failureQuery) {}
 
     @PostMapping("/pos-shadow/orders/logs/trace")
     ResponseEntity<ArchiveTraceAgent.Report> trace(@RequestHeader(value="Authorization",required=false) String auth,
                                                    @RequestBody TraceRequest request) {
         var id=order(auth,new CaseController.CreateRequest(request.orderId()));
         if (request.date()==null || !id.matches("[0-9]{1,64}") ||
-                (request.plannerQuestion()!=null && request.plannerQuestion().length()>256))
+                (request.plannerQuestion()!=null && (request.plannerQuestion().length()>256 ||
+                        (!request.plannerQuestion().isBlank() && request.failureQuery()!=null))))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        var report=traceAgent.trace(id,request.date(),request.plannerQuestion());
+        var report=traceAgent.trace(id,request.date(),request.plannerQuestion(),request.failureQuery());
         var unavailable=report.coverage()!=null && (report.coverage().status()==PushArchiveLookup.Status.READ_ERROR ||
                 report.coverage().status()==PushArchiveLookup.Status.NOT_CONFIGURED);
         return ResponseEntity.status(unavailable ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.OK)

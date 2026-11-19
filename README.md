@@ -2,6 +2,10 @@
 
 ## 查询推送服务的压缩日志
 
+**失败原因与多次对比。** 使用同一 `/pos-shadow/orders/logs/trace` 接口，在请求体中加入 `"failureQuery":"LATEST_FAILURE"`（最近一次明确失败）或 `"failureQuery":"COMPARE_FAILURES"`（比较已读范围内的失败）即可离线查询。也可以单独提交 `plannerQuestion`，由模型选择工具。最近一次失败允许后面还有成功请求。
+
+失败尝试的 `failure` 对象提供异常行号、异常类型、可展示的消息、首个识别到的业务栈帧和行号。仅追踪同一失败日志事件的紧邻堆栈；遇到其他日志事件、文件边界或不完整请求时停止关联。当前可展示的业务消息为“收益流水和销售流水不同”，未识别的消息留空。比较时只计入类型、消息和方法均有证据的失败。样本中的一致性指程序报告了同一异常，具体业务字段或数据差异仍需核对抛错代码。
+
 在同一配置下，`POST /pos-shadow/orders/logs/trace` 接收 `orderId` 和 `date`。默认本地对比已扫描归档中的各次处理。返回的 `beforeLine/controllerLine/resultLine/afterLine` 是同一文件里的行号，可直接复核。只有同一进程与线程的 POST 请求边界完整、控制器明确打印目标订单号、服务层也明确打印该订单的结果时，才报告 `REPORTED_SUCCESS`、`REPORTED_FAILURE` 或 `REPORTED_DUPLICATE`。未闭合的请求、跨分片或含有歧义的处理返回 `UNKNOWN`。服务层报告的结果和 POS 当前是否有单需分别查证。
 
 需要模型选择工具时，可附上 `"plannerQuestion":"最近那次处理结果怎么样？"`。这段提问会交给已配置的百炼规划器，请只填写调查意图。程序替换其中的数字，订单参数、归档内容及扫描结果均留在本机。模型可选择最早、最近、对比或澄清，服务端仅接受这些动作，以实际行号和固定业务消息生成答复。模型不可用时返回本地对比结果，`planner` 字段标记降级。最早与最近均限于已读样本；时间戳相同的候选会一起返回。
@@ -41,7 +45,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -H
 .\project-mvn.cmd package
 $env:POS_DB_PASSWORD = [Net.NetworkCredential]::new('',(Read-Host '本机 MySQL 只读口令' -AsSecureString)).Password
 $env:POS_SHADOW_TOKEN = [guid]::NewGuid().ToString('N')
-$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.7.0-shadow.4.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
+$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.7.0-shadow.5.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
 ~~~
 
 服务启动后在同一 PowerShell 中查询，结束时使用 `Stop-Process -Id $app.Id`。
@@ -63,7 +67,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/check' -Method Post -
 .\project-mvn.cmd spring-boot:run
 ~~~
 
-`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.7.0-shadow.4.jar`。
+`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.7.0-shadow.5.jar`。
 
 默认监听 127.0.0.1:8080。案件库在工作目录 data 下，重启时使用同一工作目录。Maven 测试使用独立内存库。演示令牌用于本机模拟门店身份，实际运维身份系统留待真实只读接入阶段。
 
