@@ -1,0 +1,70 @@
+{
+  "timeouts": [
+    {
+      "orderId": "123458",
+      "storeId": "033101",
+      "source": "POS_WRITER"
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "orderId": "123457",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-01",
+      "time": "2026-11-18T02:02:00Z",
+      "safeMessage": "首次回传已接收",
+      "privateFields": {
+        "phone": "13800000000",
+        "address": "模拟地址A",
+        "token": "synthetic-private-token"
+      }
+    },
+    {
+      "id": "e2",
+      "orderId": "123457",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-01",
+      "time": "2026-11-18T02:02:03Z",
+      "safeMessage": "门店映射缺失，本次处理终止"
+    },
+    {
+      "id": "e3",
+      "orderId": "123457",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "REPAIR-02",
+      "time": "2026-11-18T02:21:00Z",
+      "safeMessage": "独立补单请求已受理"
+    },
+    {
+      "id": "e4",
+      "orderId": "123457",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "REPAIR-02",
+      "time": "2026-11-18T02:21:02Z",
+      "safeMessage": "补单写入 POS 成功"
+    },
+    {
+      "id": "e5",
+      "orderId": "123456",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-01",
+      "time": "2026-11-18T02:02:01Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "e6",
+      "orderId": "223456",
+      "storeId": "033102",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-01",
+      "time": "2026-11-18T02:02:01Z",
+      "safeMessage": "其他门店请求已完成"
+    }
+  ]
+}

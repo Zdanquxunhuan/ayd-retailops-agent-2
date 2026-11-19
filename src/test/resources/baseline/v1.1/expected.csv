@@ -1,0 +1,10 @@
+orderId,businessTruth,expectedOutcome,expectedMeituanCalls
+123456,completed and absent,MISSING_CANDIDATE,1
+123457,completed and present,POS_PRESENT,0
+123458,completed and present but POS times out,POS_TIMEOUT,0
+123459,completed and absent but POS access denied,POS_DENIED,0
+123460,in progress and absent,MEITUAN_NOT_COMPLETED,1
+123461,absent from both systems,MEITUAN_NOT_FOUND,1
+123462,completed and absent but Meituan times out,MEITUAN_TIMEOUT,1
+123463,completed and absent but Meituan access denied,MEITUAN_DENIED,1
+223456,completed and present in another store,POS_PRESENT,0

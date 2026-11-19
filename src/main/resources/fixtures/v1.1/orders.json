@@ -1,0 +1,11 @@
+[
+  {"orderId":"123456","storeId":"033101","pos":"NOT_FOUND","meituan":"COMPLETED"},
+  {"orderId":"123457","storeId":"033101","pos":"FOUND","meituan":"COMPLETED"},
+  {"orderId":"123458","storeId":"033101","pos":"TIMEOUT","meituan":"COMPLETED"},
+  {"orderId":"123459","storeId":"033101","pos":"DENIED","meituan":"COMPLETED"},
+  {"orderId":"123460","storeId":"033101","pos":"NOT_FOUND","meituan":"NOT_COMPLETED"},
+  {"orderId":"123461","storeId":"033101","pos":"NOT_FOUND","meituan":"NOT_FOUND"},
+  {"orderId":"123462","storeId":"033101","pos":"NOT_FOUND","meituan":"TIMEOUT"},
+  {"orderId":"123463","storeId":"033101","pos":"NOT_FOUND","meituan":"DENIED"},
+  {"orderId":"223456","storeId":"033102","pos":"FOUND","meituan":"COMPLETED"}
+]

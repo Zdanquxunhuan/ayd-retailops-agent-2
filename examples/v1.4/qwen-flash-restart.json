@@ -1,0 +1,230 @@
+{
+  "model": "qwen-flash",
+  "order": "123457",
+  "paused": {
+    "id": "8267d013-b2e7-4606-8e23-ae4b8f9c228d",
+    "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+    "status": "PAUSED",
+    "answer": "",
+    "citations": [],
+    "steps": [
+      {
+        "number": 1,
+        "action": "searchOrderLogs",
+        "argumentHash": "1e245936cdba4654372c57f607d46ebd",
+        "result": "OK",
+        "evidenceIds": [
+          "fff28730-f632-3095-847f-ab8690c0cd16",
+          "508c1e19-7577-3436-9631-5028b784499b",
+          "767a1f8d-eeeb-35a1-9d00-02df974bdfdd"
+        ],
+        "elapsedMs": 1435,
+        "tokens": 1244,
+        "operator": "duty-a"
+      }
+    ]
+  },
+  "afterProcessRestart": {
+    "id": "8267d013-b2e7-4606-8e23-ae4b8f9c228d",
+    "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+    "status": "FINISHED",
+    "answer": "该订单首次回传未成功入库，因POS系统在处理时发现门店映射缺失，导致本次写入终止。接收记录已确认，但处理失败原因明确。",
+    "citations": [
+      "fff28730-f632-3095-847f-ab8690c0cd16",
+      "00cec486-4846-3ca2-a2a6-e000cfd22f17"
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "action": "searchOrderLogs",
+        "argumentHash": "1e245936cdba4654372c57f607d46ebd",
+        "result": "OK",
+        "evidenceIds": [
+          "fff28730-f632-3095-847f-ab8690c0cd16",
+          "508c1e19-7577-3436-9631-5028b784499b",
+          "767a1f8d-eeeb-35a1-9d00-02df974bdfdd"
+        ],
+        "elapsedMs": 1435,
+        "tokens": 1244,
+        "operator": "duty-a"
+      },
+      {
+        "number": 2,
+        "action": "followLogReference",
+        "argumentHash": "6f953b60efd0928c24dae61ad1b827da",
+        "result": "OK",
+        "evidenceIds": [
+          "00cec486-4846-3ca2-a2a6-e000cfd22f17",
+          "722333b0-5955-355c-80d7-ca9173255b02"
+        ],
+        "elapsedMs": 1443,
+        "tokens": 1600,
+        "operator": "next-shift-a"
+      },
+      {
+        "number": 3,
+        "action": "finish",
+        "argumentHash": "03d9f28e2a4f8e401bbe9a9f5e31f93f",
+        "result": "OK",
+        "evidenceIds": [
+          "fff28730-f632-3095-847f-ab8690c0cd16",
+          "00cec486-4846-3ca2-a2a6-e000cfd22f17"
+        ],
+        "elapsedMs": 1077,
+        "tokens": 1973,
+        "operator": "next-shift-a"
+      }
+    ]
+  },
+  "followUp": {
+    "id": "e3fc1366-e8ce-4910-98e6-c0e3b5e38577",
+    "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+    "status": "FINISHED",
+    "answer": "该订单后续补单已成功写入POS系统。补单请求（REPAIR-02）在2026年11月18日02:21:02Z被POS_WRITER记录为写入成功，处理结果已确认。",
+    "citations": [
+      "46868966-904a-395d-ae9b-5ba7462f6480"
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "action": "followLogReference",
+        "argumentHash": "e878e67b83bf468356f6fbec84d07312",
+        "result": "OK",
+        "evidenceIds": [
+          "46868966-904a-395d-ae9b-5ba7462f6480",
+          "8cd291c0-d882-3a13-9b37-7dd2c140f8b9"
+        ],
+        "elapsedMs": 980,
+        "tokens": 1363,
+        "operator": "next-shift-a"
+      },
+      {
+        "number": 2,
+        "action": "finish",
+        "argumentHash": "09e5f0c2325e10afb4d617157df79bd3",
+        "result": "OK",
+        "evidenceIds": [
+          "46868966-904a-395d-ae9b-5ba7462f6480"
+        ],
+        "elapsedMs": 958,
+        "tokens": 1736,
+        "operator": "next-shift-a"
+      }
+    ]
+  },
+  "currentPos": {
+    "id": "212937b8-c7c4-415c-89a1-f45a44e503fd",
+    "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+    "status": "FINISHED",
+    "answer": "本次查询已在 POS 查到该订单。",
+    "citations": [
+      "d5b6832e-dd95-35e7-83e2-f40856119982"
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "action": "queryPosOrder",
+        "argumentHash": "",
+        "result": "OK",
+        "evidenceIds": [
+          "d5b6832e-dd95-35e7-83e2-f40856119982"
+        ],
+        "elapsedMs": 1,
+        "tokens": 0,
+        "operator": "next-shift-a"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "fff28730-f632-3095-847f-ab8690c0cd16",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "GATEWAY",
+      "kind": "LOG",
+      "requestRef": "PUSH-01",
+      "eventTime": "2026-11-18T02:02:00Z",
+      "collectedAt": "2026-11-18T15:23:48.363636100Z",
+      "excerpt": "首次回传已接收"
+    },
+    {
+      "id": "00cec486-4846-3ca2-a2a6-e000cfd22f17",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_WRITER",
+      "kind": "LOG",
+      "requestRef": "PUSH-01",
+      "eventTime": "2026-11-18T02:02:03Z",
+      "collectedAt": "2026-11-18T15:23:54.214731700Z",
+      "excerpt": "门店映射缺失，本次处理终止"
+    },
+    {
+      "id": "508c1e19-7577-3436-9631-5028b784499b",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "GATEWAY",
+      "kind": "LOG",
+      "requestRef": "REPAIR-02",
+      "eventTime": "2026-11-18T02:21:00Z",
+      "collectedAt": "2026-11-18T15:23:48.363636100Z",
+      "excerpt": "独立补单请求已受理"
+    },
+    {
+      "id": "46868966-904a-395d-ae9b-5ba7462f6480",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_WRITER",
+      "kind": "LOG",
+      "requestRef": "REPAIR-02",
+      "eventTime": "2026-11-18T02:21:02Z",
+      "collectedAt": "2026-11-18T15:23:56.392955300Z",
+      "excerpt": "补单写入 POS 成功"
+    },
+    {
+      "id": "367d73a5-6f9e-31b9-af5a-60b0d604b9a1",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_FIXTURE",
+      "kind": "SNAPSHOT",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T15:23:46.63Z",
+      "excerpt": "FOUND"
+    },
+    {
+      "id": "767a1f8d-eeeb-35a1-9d00-02df974bdfdd",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "GATEWAY",
+      "kind": "SEARCH",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T15:23:48.371604Z",
+      "excerpt": "MATCHES [2026-11-17T16:00:00Z,2026-11-18T15:59:59Z) limit=8 expired=false truncated=false parent=null"
+    },
+    {
+      "id": "722333b0-5955-355c-80d7-ca9173255b02",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_WRITER",
+      "kind": "SEARCH",
+      "requestRef": "PUSH-01",
+      "eventTime": null,
+      "collectedAt": "2026-11-18T15:23:54.221734500Z",
+      "excerpt": "MATCHES [2026-11-17T16:00:00Z,2026-11-18T15:59:59Z) limit=8 expired=false truncated=false parent=fff28730-f632-3095-847f-ab8690c0cd16"
+    },
+    {
+      "id": "8cd291c0-d882-3a13-9b37-7dd2c140f8b9",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_WRITER",
+      "kind": "SEARCH",
+      "requestRef": "REPAIR-02",
+      "eventTime": null,
+      "collectedAt": "2026-11-18T15:23:56.392955300Z",
+      "excerpt": "MATCHES [2026-11-18T02:21:00Z,2026-11-18T03:21:00Z) limit=8 expired=false truncated=false parent=508c1e19-7577-3436-9631-5028b784499b"
+    },
+    {
+      "id": "d5b6832e-dd95-35e7-83e2-f40856119982",
+      "caseId": "bdc436b9-7108-4aad-8590-174f6cefb117",
+      "source": "POS_FIXTURE",
+      "kind": "SNAPSHOT",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T15:23:57.381708500Z",
+      "excerpt": "FOUND"
+    }
+  ]
+}

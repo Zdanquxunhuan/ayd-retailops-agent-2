@@ -1,0 +1,116 @@
+{
+  "model": "qwen-flash",
+  "order": "123457",
+  "question": "这笔订单第一次回传到底发生了什么？请先定位原始接收请求，再找到对应请求的处理证据。证据不足请说明。",
+  "report": {
+    "id": "b5517eee-0034-4880-bf04-7146799c1755",
+    "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+    "status": "FINISHED",
+    "answer": "原始回传请求（requestRef: PUSH-01）于2026年11月18日02:02:00Z被GATEWAY接收，对应POS_WRITER处理记录显示，该请求因‘门店映射缺失’导致处理终止。因此，此次回传未成功写入POS系统。",
+    "citations": [
+      "2a7fc8c4-25c8-3f6e-bc7d-f36435ca3d48",
+      "d53a0eb9-cf85-34af-a8ed-a0b41e6c3c35"
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "action": "searchOrderLogs",
+        "argumentHash": "1e245936cdba4654372c57f607d46ebd",
+        "result": "OK",
+        "evidenceIds": [
+          "2a7fc8c4-25c8-3f6e-bc7d-f36435ca3d48",
+          "725d0516-a649-3cba-8f6d-660e586b255b",
+          "95420498-7abb-3cee-af47-f3051edef322"
+        ],
+        "elapsedMs": 1314,
+        "tokens": 1186
+      },
+      {
+        "number": 2,
+        "action": "followLogReference",
+        "argumentHash": "b737e2f1cde69d784f1556aa07ee4e14",
+        "result": "OK",
+        "evidenceIds": [
+          "d53a0eb9-cf85-34af-a8ed-a0b41e6c3c35",
+          "6cdfa178-ecfc-3f04-9598-90ded81365bf"
+        ],
+        "elapsedMs": 1330,
+        "tokens": 1598
+      },
+      {
+        "number": 3,
+        "action": "finish",
+        "argumentHash": "387d4a9e31bca2648ae0b57a5fc91091",
+        "result": "OK",
+        "evidenceIds": [
+          "2a7fc8c4-25c8-3f6e-bc7d-f36435ca3d48",
+          "d53a0eb9-cf85-34af-a8ed-a0b41e6c3c35"
+        ],
+        "elapsedMs": 1217,
+        "tokens": 2004
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "2a7fc8c4-25c8-3f6e-bc7d-f36435ca3d48",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "GATEWAY",
+      "kind": "LOG",
+      "requestRef": "PUSH-01",
+      "eventTime": "2026-11-18T02:02:00Z",
+      "collectedAt": "2026-11-18T11:19:54.089742200Z",
+      "excerpt": "首次回传已接收"
+    },
+    {
+      "id": "d53a0eb9-cf85-34af-a8ed-a0b41e6c3c35",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "POS_WRITER",
+      "kind": "LOG",
+      "requestRef": "PUSH-01",
+      "eventTime": "2026-11-18T02:02:03Z",
+      "collectedAt": "2026-11-18T11:19:55.436780400Z",
+      "excerpt": "门店映射缺失，本次处理终止"
+    },
+    {
+      "id": "725d0516-a649-3cba-8f6d-660e586b255b",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "GATEWAY",
+      "kind": "LOG",
+      "requestRef": "REPAIR-02",
+      "eventTime": "2026-11-18T02:21:00Z",
+      "collectedAt": "2026-11-18T11:19:54.089742200Z",
+      "excerpt": "独立补单请求已受理"
+    },
+    {
+      "id": "c01a6349-222f-37d5-b634-18efde69fb69",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "POS_FIXTURE",
+      "kind": "SNAPSHOT",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:52.617039800Z",
+      "excerpt": "FOUND"
+    },
+    {
+      "id": "95420498-7abb-3cee-af47-f3051edef322",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "GATEWAY",
+      "kind": "SEARCH",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:54.094739400Z",
+      "excerpt": "MATCHES [2026-11-17T16:00:00Z,2026-11-18T15:59:59Z) limit=8 expired=false truncated=false parent=null"
+    },
+    {
+      "id": "6cdfa178-ecfc-3f04-9598-90ded81365bf",
+      "caseId": "e5dc5d4b-ce48-41b0-8b32-0d67da22873c",
+      "source": "POS_WRITER",
+      "kind": "SEARCH",
+      "requestRef": "PUSH-01",
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:55.43778Z",
+      "excerpt": "MATCHES [2026-11-17T16:00:00Z,2026-11-18T15:59:59Z) limit=8 expired=false truncated=false parent=2a7fc8c4-25c8-3f6e-bc7d-f36435ca3d48"
+    }
+  ]
+}

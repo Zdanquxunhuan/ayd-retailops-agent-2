@@ -1,0 +1,102 @@
+{
+  "model": "qwen-flash",
+  "order": "123456",
+  "question": "这笔订单第一次回传到底发生了什么？请先定位原始接收请求，再找到对应请求的处理证据。证据不足请说明。",
+  "report": {
+    "id": "3df9785c-753e-4d75-86b9-6dacd3d21d4f",
+    "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+    "status": "FINISHED",
+    "answer": "接收日志记录了请求 PUSH-01。引用证据中缺少对应的写库处理记录，无法确认当次写入结果或失败原因。",
+    "citations": [
+      "e71a1bac-f063-37f3-a20b-61e72060b47d"
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "action": "searchOrderLogs",
+        "argumentHash": "1e245936cdba4654372c57f607d46ebd",
+        "result": "OK",
+        "evidenceIds": [
+          "e71a1bac-f063-37f3-a20b-61e72060b47d",
+          "c7669a9d-5d4b-3099-9f84-8d7ec2d0f14e"
+        ],
+        "elapsedMs": 936,
+        "tokens": 1245
+      },
+      {
+        "number": 2,
+        "action": "followLogReference",
+        "argumentHash": "dab7b84016d171fc546088d4529a8ce7",
+        "result": "OK",
+        "evidenceIds": [
+          "001da5b8-543b-3f4c-ab94-c860963476b6"
+        ],
+        "elapsedMs": 991,
+        "tokens": 1577
+      },
+      {
+        "number": 3,
+        "action": "finish",
+        "argumentHash": "ca986803baacbdc3350cde8f82b8a1ee",
+        "result": "OK",
+        "evidenceIds": [
+          "e71a1bac-f063-37f3-a20b-61e72060b47d"
+        ],
+        "elapsedMs": 1378,
+        "tokens": 1877
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "e71a1bac-f063-37f3-a20b-61e72060b47d",
+      "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+      "source": "GATEWAY",
+      "kind": "LOG",
+      "requestRef": "PUSH-01",
+      "eventTime": "2026-11-18T02:02:01Z",
+      "collectedAt": "2026-11-18T11:19:57.704990200Z",
+      "excerpt": "首次回传已接收"
+    },
+    {
+      "id": "4729fd6e-eb89-33a9-a88b-a53278bd318d",
+      "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+      "source": "POS_FIXTURE",
+      "kind": "SNAPSHOT",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:56.750305100Z",
+      "excerpt": "NOT_FOUND"
+    },
+    {
+      "id": "5a4026ab-48e2-38ca-b24a-5a1bf0a8f561",
+      "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+      "source": "MEITUAN_FIXTURE",
+      "kind": "SNAPSHOT",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:56.750305100Z",
+      "excerpt": "COMPLETED"
+    },
+    {
+      "id": "c7669a9d-5d4b-3099-9f84-8d7ec2d0f14e",
+      "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+      "source": "GATEWAY",
+      "kind": "SEARCH",
+      "requestRef": null,
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:57.706022800Z",
+      "excerpt": "MATCHES [2026-11-17T16:00:00Z,2026-11-18T15:59:59Z) limit=8 expired=false truncated=false parent=null"
+    },
+    {
+      "id": "001da5b8-543b-3f4c-ab94-c860963476b6",
+      "caseId": "52be0e12-9aab-4153-b287-29f288c254a8",
+      "source": "POS_WRITER",
+      "kind": "SEARCH",
+      "requestRef": "PUSH-01",
+      "eventTime": null,
+      "collectedAt": "2026-11-18T11:19:58.698893200Z",
+      "excerpt": "NO_MATCH [2026-11-17T18:02:00Z,2026-11-17T18:03:00Z) limit=8 expired=false truncated=false parent=e71a1bac-f063-37f3-a20b-61e72060b47d"
+    }
+  ]
+}
