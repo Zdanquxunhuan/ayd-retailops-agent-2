@@ -55,10 +55,21 @@ class QwenModel implements InvestigationModel {
     }
 
     public Decision choose(Context context, List<Map<String,Object>> tools, Duration timeout) {
+        return choose(context,tools,timeout,SYSTEM);
+    }
+
+    Decision selectArchiveTool(String question,List<Map<String,Object>> tools) {
+        var context=new Context(question,"","",List.of(),List.of(),List.of(),1,"");
+        return choose(context,tools,Duration.ofSeconds(12),
+                "你为日志调查选择一个只读工具。根据问题选择最早一次、最近一次或对比全部回传。"
+                +"问题涉及当前POS状态、执行补单、特定未支持的筛选或含义不清时选 clarify。只选择函数。");
+    }
+
+    private Decision choose(Context context, List<Map<String,Object>> tools, Duration timeout,String system) {
         if (key.isBlank()) throw new Unavailable("DASHSCOPE_API_KEY 未配置");
         try {
             var messages = new ArrayList<Map<String,Object>>();
-            messages.add(Map.of("role","system","content",SYSTEM));
+            messages.add(Map.of("role","system","content",system));
             var obtained = context.exchanges().stream().flatMap(e -> e.observations().stream())
                     .map(CaseEvidence.Item::id).collect(java.util.stream.Collectors.toSet());
             var initial = context.evidence().stream().filter(e -> !obtained.contains(e.id())).toList();

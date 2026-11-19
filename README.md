@@ -1,4 +1,35 @@
-# 美团订单回传 POS 排障 · V1.7 第一阶段
+# 美团订单回传 POS 排障 · V1.7 只读查证
+
+## 查询推送服务的压缩日志
+
+在同一配置下，`POST /pos-shadow/orders/logs/trace` 接收 `orderId` 和 `date`。默认本地对比已扫描归档中的各次处理。返回的 `beforeLine/controllerLine/resultLine/afterLine` 是同一文件里的行号，可直接复核。只有同一进程与线程的 POST 请求边界完整、控制器明确打印目标订单号、服务层也明确打印该订单的结果时，才报告 `REPORTED_SUCCESS`、`REPORTED_FAILURE` 或 `REPORTED_DUPLICATE`。未闭合的请求、跨分片或含有歧义的处理返回 `UNKNOWN`。服务层报告的结果和 POS 当前是否有单需分别查证。
+
+需要模型选择工具时，可附上 `"plannerQuestion":"最近那次处理结果怎么样？"`。这段提问会交给已配置的百炼规划器，请只填写调查意图。程序替换其中的数字，订单参数、归档内容及扫描结果均留在本机。模型可选择最早、最近、对比或澄清，服务端仅接受这些动作，以实际行号和固定业务消息生成答复。模型不可用时返回本地对比结果，`planner` 字段标记降级。最早与最近均限于已读样本；时间戳相同的候选会一起返回。
+
+在启动 `pos-shadow` 服务前，设置 `$env:PUSH_LOG_ARCHIVE` 为单个归档的绝对路径，或设为运维已获准读取的归档目录。支持来自 `/data/service/b-push-center-server/logs` 的 `b-push-center-server.log.YYYY-MM-DD.*.gz`。本机可直接查已拷贝的文件。
+
+~~~powershell
+$env:PUSH_LOG_ARCHIVE='F:\ayd\b-push-center-server.log.2026-11-11.2.gz'
+# 启动服务后，在同一会话执行
+Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -Headers @{Authorization="Bearer $env:POS_SHADOW_TOKEN"} -ContentType 'application/json' -Body '{"orderId":"3302392674020451666","date":"2026-11-11"}'
+~~~
+
+按请求中的归档日期选择文件，按文件名字典序读取。匹配完整数字订单号后取后续 50 行，合并相交窗口。结果给出实际扫描的文件列表、完成文件数、行号、可识别的日志时间及固定词表中的标记。只有 `ORDER_MATCH` 表示该行包含订单号；`CONTEXT` 行可用于定位人工复核位置，其中的超时或异常可能属于另一笔订单。原始行留在文件中。该入口独立读取文件，不触发 POS、美团或模型调用。
+
+`NO_ARCHIVES` 表示没有该日期的可读匹配文件，`NO_MATCH` 表示在列出的已扫描文件中未命中；均不能证明订单从未推送。损坏或不可读返回 `READ_ERROR`。超过 256 个结果行、单行 1 Mi 字符或总量 512 Mi 字符时标记 `TRUNCATED`，保留已有定位信息。
+
+## 美团订单详情与联合查证
+
+在下方启动只读服务的命令之前，于同一 PowerShell 会话设置 `$env:MT_APP_ID` 和 `$env:MT_APP_SECRET`。可用 `$env:MT_APP_SECRET = [Net.NetworkCredential]::new('',(Read-Host '美团 AppSecret' -AsSecureString)).Password` 输入密钥。SDK 默认从 E 盘提供的 1.0.27.1-SNAPSHOT JAR 加载，可用 `MT_SDK_JAR` 指定本地路径。Java 用两参数 SystemParam 构造只读订单请求。未配置凭据时 POS 查询仍可使用，美团查询返回 `NOT_CONFIGURED`。
+
+沿用下方查单示例的请求头和 JSON 请求体，地址可选：
+
+| POST 路径 | 用途 |
+|---|---|
+| `/pos-shadow/orders/meituan-detail` | 单独查美团，用近五天已知状态的订单做对照。 |
+| `/pos-shadow/orders/investigate` | 先查 POS，两张流水均无记录时查美团。其他 POS 结果直接返回，`meituan` 为空。 |
+
+成功响应按 `data.order_id` 校验订单，保留门店编码、状态、完成时间和请求 ID。状态 8 表示已完成；1、2、4、9 保留原码并标记未完成。当前未知状态码单独标记。错误 838 表示超出查询时间窗，业务状态未知；其他未映射错误保留错误码和请求 ID，供运维排查。响应中的顾客资料和签名不进入 API 结果。此模式不调用模型或补单方法。
 
 ## 本机 MySQL 只读查单
 
@@ -10,7 +41,7 @@
 .\project-mvn.cmd package
 $env:POS_DB_PASSWORD = [Net.NetworkCredential]::new('',(Read-Host '本机 MySQL 只读口令' -AsSecureString)).Password
 $env:POS_SHADOW_TOKEN = [guid]::NewGuid().ToString('N')
-$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.7.0-pos.1.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
+$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.7.0-shadow.4.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
 ~~~
 
 服务启动后在同一 PowerShell 中查询，结束时使用 `Stop-Process -Id $app.Id`。
@@ -19,7 +50,7 @@ $app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -Ar
 Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/check' -Method Post -Headers @{Authorization="Bearer $env:POS_SHADOW_TOKEN"} -ContentType 'application/json' -Body '{"orderId":"123456"}'
 ~~~
 
-此模式独立于下方沙箱，真实订单号不会进入演示案件、模型上下文或补单执行器。门店归属待接入美团详情的 `app_poi_code`；当前接口适用于已获跨店读权限的本机运维。下方示例使用默认沙箱模式。
+此模式独立于下方沙箱，真实订单号不会进入演示案件、模型上下文或补单执行器。美团响应中的 `app_poi_code` 是门店证据，当前接口供已获跨店读权限的本机运维使用。下方示例使用默认沙箱模式。
 
 值班运维用一个美团订单号创建查证案件。Java 先查 POS，仅在 POS 明确返回无记录时查询美团交易状态。每次创建保存一份观测快照；读取同一案件可复核当时的结果，重新查单请创建新案件。当前使用版本化合成订单、本机演示身份和 H2 文件库。
 
@@ -32,7 +63,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/check' -Method Post -
 .\project-mvn.cmd spring-boot:run
 ~~~
 
-`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.7.0-pos.1.jar`。
+`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.7.0-shadow.4.jar`。
 
 默认监听 127.0.0.1:8080。案件库在工作目录 data 下，重启时使用同一工作目录。Maven 测试使用独立内存库。演示令牌用于本机模拟门店身份，实际运维身份系统留待真实只读接入阶段。
 

@@ -43,6 +43,8 @@ class PosShadowTest {
         var headers=new HttpHeaders();
         headers.setBearerAuth("demo-ops-a");
         var request=new HttpEntity<>(Map.of("orderId","123456"),headers);
+        assertThat(http.postForEntity("/pos-shadow/orders/meituan-detail",request,String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(http.postForEntity("/pos-shadow/orders/check",request,String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
         headers.setBearerAuth("test-shadow");

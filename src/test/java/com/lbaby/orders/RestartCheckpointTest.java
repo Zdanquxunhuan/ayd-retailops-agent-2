@@ -24,6 +24,8 @@ class RestartCheckpointTest {
     @TempDir Path directory;
     private static final ObjectMapper JSON = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
+    private final Map<String,java.io.ByteArrayOutputStream> logs=new HashMap<>();
+    private final Map<Process,Thread> readers=new HashMap<>();
 
     @TestConfiguration(proxyBeanMethods=false)
     static class ReplayConfiguration {
@@ -121,7 +123,7 @@ class RestartCheckpointTest {
     }
 
     private boolean wrote(String label) throws Exception {
-        return Files.readString(directory.resolve(label+".log"),java.nio.charset.Charset.defaultCharset())
+        return logs.get(label).toString(java.nio.charset.Charset.defaultCharset())
                 .contains("SANDBOX_WRITE_COMMITTED");
     }
 
@@ -131,19 +133,26 @@ class RestartCheckpointTest {
         var pb=new ProcessBuilder(java,"-cp",cp,RestartCheckpointTest.class.getName(),"--server.port=0",
                 "--spring.datasource.url=jdbc:h2:file:"+directory.resolve("cases")+";WRITE_DELAY=0");
         pb.environment().remove("DASHSCOPE_API_KEY");
-        return pb.redirectErrorStream(true).redirectOutput(directory.resolve(label+".log").toFile()).start();
+        var process=pb.redirectErrorStream(true).start();
+        var output=new java.io.ByteArrayOutputStream();
+        logs.put(label,output);
+        readers.put(process,Thread.startVirtualThread(() -> {
+            try (var input=process.getInputStream()) { input.transferTo(output); }
+            catch (java.io.IOException closedOnKill) { /* A forced process exit can close the pipe. */ }
+        }));
+        return process;
     }
 
     private String url(Process p,String label) throws Exception {
         var pattern=Pattern.compile("Tomcat started on port (\\d+)");
-        Path log=directory.resolve(label+".log");
+        var log=logs.get(label);
         long end=System.nanoTime()+Duration.ofSeconds(60).toNanos();
         while (p.isAlive() && System.nanoTime()<end) {
-            var match=pattern.matcher(Files.readString(log,java.nio.charset.Charset.defaultCharset()));
+            var match=pattern.matcher(log.toString(java.nio.charset.Charset.defaultCharset()));
             if (match.find()) return "http://127.0.0.1:"+match.group(1)+"/cases";
             Thread.sleep(150);
         }
-        throw new AssertionError("Application startup failed: "+Files.readString(log));
+        throw new AssertionError("Application startup failed: "+log);
     }
 
     private JsonNode post(String url,Object body,String operator) throws Exception {
@@ -157,5 +166,6 @@ class RestartCheckpointTest {
 
     private void kill(Process p) throws Exception {
         assertThat(p.destroyForcibly().waitFor(10,TimeUnit.SECONDS)).isTrue();
+        assertThat(readers.get(p).join(Duration.ofSeconds(5))).isTrue();
     }
 }
