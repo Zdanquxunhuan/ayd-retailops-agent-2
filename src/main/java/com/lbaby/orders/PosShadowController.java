@@ -3,7 +3,7 @@ package com.lbaby.orders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,18 +19,19 @@ class PosShadowController {
     private final PushArchiveLookup archives;
     private final ArchiveTraceAgent traceAgent;
 
+    private final ShadowCases cases;
+
     PosShadowController(@Value("${POS_DB_PASSWORD}") String password,
                         @Value("${POS_SHADOW_TOKEN}") String token, MeituanShadowLookup meituan, PushArchiveLookup archives,
-                        ArchiveTraceAgent traceAgent) {
+                        ArchiveTraceAgent traceAgent, PosShadowLookup lookup, ShadowCases cases) {
+        this.cases=cases;
         this.traceAgent=traceAgent;
         this.archives=archives;
         this.meituan=meituan;
         if (token.isBlank() || password.isBlank()) throw new IllegalArgumentException("Missing POS shadow credentials");
         authorization=("Bearer "+token).getBytes(StandardCharsets.UTF_8);
         // Keep application schema initialization and repair state on the separate Spring datasource.
-        lookup=new PosShadowLookup(new DriverManagerDataSource(
-                "jdbc:mysql://127.0.0.1:3306/mtjd?connectTimeout=3000&socketTimeout=6000",
-                "onlyselect",password));
+        this.lookup=lookup;
     }
 
     @PostMapping("/pos-shadow/orders/check")
@@ -91,9 +92,38 @@ class PosShadowController {
         return ResponseEntity.status(mtCode(fact)).cacheControl(CacheControl.noStore()).body(fact);
     }
 
-    private String order(String auth,CaseController.CreateRequest request) {
+    record Open(String orderId,java.time.LocalDate date,String question,ShadowCases.Intent intent) {}
+
+    @PostMapping("/pos-shadow/cases")
+    ResponseEntity<ShadowCases.View> open(@RequestHeader(value="Authorization",required=false) String auth,
+                                         @RequestBody Open req) {
+        var id=order(auth,new CaseController.CreateRequest(req.orderId()));
+        if (!id.matches("[0-9]{1,64}")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        var view=cases.open(id,new ShadowCases.Input(req.date(),req.question(),req.intent(),false));
+        return ResponseEntity.created(java.net.URI.create("/pos-shadow/cases/"+view.id())).cacheControl(CacheControl.noStore()).body(view);
+    }
+
+    @PostMapping("/pos-shadow/cases/{id}/turns")
+    ResponseEntity<ShadowCases.View> follow(@RequestHeader(value="Authorization",required=false) String auth,
+            @PathVariable UUID id,@RequestBody ShadowCases.Input input) {
+        authorize(auth);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(cases.follow(id,input));
+    }
+
+    @GetMapping("/pos-shadow/cases/{id}")
+    ResponseEntity<ShadowCases.View> caseView(@RequestHeader(value="Authorization",required=false) String auth,
+                                             @PathVariable UUID id) {
+        authorize(auth);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(cases.read(id));
+    }
+
+    private void authorize(String auth) {
         if (auth==null || !MessageDigest.isEqual(authorization,auth.getBytes(StandardCharsets.UTF_8)))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+    }
+
+    private String order(String auth,CaseController.CreateRequest request) {
+        authorize(auth);
         if (request.orderId()==null || request.orderId().isBlank() || request.orderId().length()>64)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         return request.orderId().strip();

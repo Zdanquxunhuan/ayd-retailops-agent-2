@@ -1,0 +1,191 @@
+{
+  "timeouts": [
+    {
+      "orderId": "810010",
+      "storeId": "033101",
+      "source": "POS_WRITER"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt8100050",
+      "orderId": "810005",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:01:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100051",
+      "orderId": "810005",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:01:04Z",
+      "safeMessage": "门店映射缺失，处理终止"
+    },
+    {
+      "id": "evt8100052",
+      "orderId": "810005",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:06:00Z",
+      "safeMessage": "补单回传已接收"
+    },
+    {
+      "id": "evt8100053",
+      "orderId": "810005",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:06:10Z",
+      "safeMessage": "补单写入成功"
+    },
+    {
+      "id": "evt8100060",
+      "orderId": "810006",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:01:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100061",
+      "orderId": "810006",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:01:02Z",
+      "safeMessage": "处理终止"
+    },
+    {
+      "id": "evt8100062",
+      "orderId": "810006",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:22:00Z",
+      "safeMessage": "补单回传已接收"
+    },
+    {
+      "id": "evt8100063",
+      "orderId": "810006",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:22:04Z",
+      "safeMessage": "补单写入成功"
+    },
+    {
+      "id": "evt8100070",
+      "orderId": "810007",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:02:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100071",
+      "orderId": "810007",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:13:04Z",
+      "safeMessage": "数据库锁等待超时"
+    },
+    {
+      "id": "evt8100080",
+      "orderId": "810008",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:05:15Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100081",
+      "orderId": "810008",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:05:17Z",
+      "safeMessage": "订单已存在"
+    },
+    {
+      "id": "evt8100090",
+      "orderId": "810009",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:03:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100100",
+      "orderId": "810010",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:04:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100110",
+      "orderId": "810011",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:01:00Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100111",
+      "orderId": "810011",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:15:00Z",
+      "safeMessage": "补单回传已接收"
+    },
+    {
+      "id": "evt8100112",
+      "orderId": "810011",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "REPAIR-B",
+      "time": "2026-11-18T02:15:02Z",
+      "safeMessage": "补单写入成功"
+    },
+    {
+      "id": "evt8100130",
+      "orderId": "810013",
+      "storeId": "033101",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:09:55Z",
+      "safeMessage": "首次回传已接收"
+    },
+    {
+      "id": "evt8100131",
+      "orderId": "810013",
+      "storeId": "033101",
+      "source": "POS_WRITER",
+      "requestRef": "PUSH-A",
+      "time": "2026-11-18T02:10:01Z",
+      "safeMessage": "收益流水和销售流水不同"
+    },
+    {
+      "id": "foreign1",
+      "orderId": "810012",
+      "storeId": "033102",
+      "source": "GATEWAY",
+      "requestRef": "PUSH-A",
+      "safeMessage": "首次回传已接收",
+      "time": "2026-11-18T02:02:00Z"
+    }
+  ]
+}

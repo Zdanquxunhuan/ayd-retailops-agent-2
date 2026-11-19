@@ -1,0 +1,12 @@
+services:
+  replay:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /work
+    command: ["mvn", "-B", "-ntp", "-Dtest=ComparativeEvalTest", "test"]
+    volumes:
+      - ../pom.xml:/work/pom.xml:ro
+      - ../src:/work/src:ro
+      - ./output:/work/target/eval
+      - maven-cache:/root/.m2
+volumes:
+  maven-cache:

@@ -21,8 +21,8 @@ class FixtureOrderLogs implements OrderLogSource {
 
     private final Dataset data;
 
-    FixtureOrderLogs(ObjectMapper mapper) throws IOException {
-        try (var in = new ClassPathResource("fixtures/v1.2/logs.json").getInputStream()) {
+    FixtureOrderLogs(ObjectMapper mapper, @org.springframework.beans.factory.annotation.Value("${fixture.logs:fixtures/v1.2/logs.json}") String fixturePath) throws IOException {
+        try (var in = new ClassPathResource(fixturePath).getInputStream()) {
             data = mapper.readValue(in, Dataset.class);
         }
     }

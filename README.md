@@ -1,4 +1,22 @@
-# 美团订单回传 POS 排障 · V1.7 只读查证
+# 美团订单回传 POS 排障 · V1.8
+
+[同案 A/B/C 评测、回放命令与实测报告](eval/README.md)
+
+
+## 统一只读工单
+
+在 pos-shadow 模式下，用同一个 POS_SHADOW_TOKEN 调用下列入口。案件和轮次保存在工作目录的 data/pos-shadow H2 文件，重启后可按工单 ID 读取。该本机跨店运维模式的令牌可读取同一部署的工单。所有业务数据源均只读。
+
+| 请求 | 请求体示例 | 用途 |
+|---|---|---|
+| POST /pos-shadow/cases | `{"orderId":"123456","date":"2026-11-11","question":"这单现在有了，但第一次为什么失败？"}` | 查当前 POS 并按问题决定历史调查范围 |
+| POST /pos-shadow/cases/{id}/turns | `{"question":"那最后一次呢？"}` | 沿用订单和日期，从首次扫描的完整证据中选择最近一次 |
+| GET /pos-shadow/cases/{id} | 无 | 读取各轮问题、实际步骤、带时间的源观测、归档行号和待核实项 |
+
+仅给订单号时默认查当前。每次询问当前状态都回源查 POS。只有两张表均无记录时，当前状态流程才会考虑查询美团；统一工单默认关闭该调用，仅 `SHADOW_MT_ORDER_ID` 配置的单个已获授权订单可进入美团详情调用。HTTP 客户端只使用固定 HTTPS 订单详情路径并禁用跳转。错误 838 保留为未知交易状态。未给查询日期时沿用工单的日期；缺单且获得有效完成时间可取上海时区完成日作初始归档日期，否则提示补日期。单独提交日期可继续调查。显式设置 `refreshHistory:true` 并指定历史意图可重新读取归档。
+
+`intent` 可显式指定 CURRENT、FIRST、LATEST、COMPARE、LATEST_FAILURE 或 COMPARE_FAILURES。提供自然语言 question 时可由 Qwen 选工具；只发送替换数字后的提问和上一轮意图，原始订单号参数、归档和源响应留在本机。模型离线时采用有限的本地意图匹配，无法解析则提示澄清。轮次中的 archiveReadTurn 指向保存完整历史的轮次，history 只展示本轮选中的证据。并发提交发生冲突时返回 409，可重新读取工单。
+
 
 ## 查询推送服务的压缩日志
 
@@ -24,7 +42,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -H
 
 ## 美团订单详情与联合查证
 
-在下方启动只读服务的命令之前，于同一 PowerShell 会话设置 `$env:MT_APP_ID` 和 `$env:MT_APP_SECRET`。可用 `$env:MT_APP_SECRET = [Net.NetworkCredential]::new('',(Read-Host '美团 AppSecret' -AsSecureString)).Password` 输入密钥。SDK 默认从 E 盘提供的 1.0.27.1-SNAPSHOT JAR 加载，可用 `MT_SDK_JAR` 指定本地路径。Java 用两参数 SystemParam 构造只读订单请求。未配置凭据时 POS 查询仍可使用，美团查询返回 `NOT_CONFIGURED`。
+在下方启动只读服务的命令之前，于同一 PowerShell 会话设置 `$env:MT_APP_ID` 和 `$env:MT_APP_SECRET`。可用 `$env:MT_APP_SECRET = [Net.NetworkCredential]::new('',(Read-Host '美团 AppSecret' -AsSecureString)).Password` 输入密钥。SDK 默认从 E 盘提供的 1.0.27.1-SNAPSHOT JAR 加载，可用 `MT_SDK_JAR` 指定本地路径。Java 使用 SDK 的签名工具构造只读订单详情请求。未配置凭据时 POS 查询仍可使用，美团查询返回 `NOT_CONFIGURED`。
 
 沿用下方查单示例的请求头和 JSON 请求体，地址可选：
 
@@ -45,7 +63,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -H
 .\project-mvn.cmd package
 $env:POS_DB_PASSWORD = [Net.NetworkCredential]::new('',(Read-Host '本机 MySQL 只读口令' -AsSecureString)).Password
 $env:POS_SHADOW_TOKEN = [guid]::NewGuid().ToString('N')
-$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.7.0-shadow.5.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
+$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.8.0.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
 ~~~
 
 服务启动后在同一 PowerShell 中查询，结束时使用 `Stop-Process -Id $app.Id`。
@@ -67,7 +85,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/check' -Method Post -
 .\project-mvn.cmd spring-boot:run
 ~~~
 
-`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.7.0-shadow.5.jar`。
+`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.8.0.jar`。
 
 默认监听 127.0.0.1:8080。案件库在工作目录 data 下，重启时使用同一工作目录。Maven 测试使用独立内存库。演示令牌用于本机模拟门店身份，实际运维身份系统留待真实只读接入阶段。
 

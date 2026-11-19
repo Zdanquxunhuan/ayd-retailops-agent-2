@@ -1,42 +1,41 @@
 package com.lbaby.orders;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
+import java.net.http.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.*;
 
-/** The vendor JAR bundles its own JSON, HTTP and XML libraries. Keep them off the Spring classpath. */
+/** Use the vendor signer without enabling the SDK's token refresh or secondary request paths. */
 final class MeituanSdk implements AutoCloseable {
-    private static final String BASE = "com.sankuai.meituan.shangou.open.sdk.";
+    private static final String ENDPOINT="https://waimaiopen.meituan.com/api/v1/order/getOrderDetail";
     private final URLClassLoader loader;
-    private final Object systemParam;
-    private final Constructor<?> detailRequest;
-    private final Method setOrder, execute, result;
+    private final Method sign;
+    private final String appId,secret;
+    private final HttpClient client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4))
+            .followRedirects(HttpClient.Redirect.NEVER).build();
 
-    MeituanSdk(Path jar, String appId, String secret) throws ReflectiveOperationException, IOException {
-        loader = new URLClassLoader(new URL[]{jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
+    MeituanSdk(Path jar,String appId,String secret) throws ReflectiveOperationException,IOException {
+        this.appId=appId;
+        this.secret=secret;
+        loader=new URLClassLoader(new URL[]{jar.toUri().toURL()},ClassLoader.getPlatformClassLoader());
         try {
-            var params = loader.loadClass(BASE + "domain.SystemParam");
-            var detail = loader.loadClass(BASE + "request.OrderGetOrderDetailRequest");
-            systemParam = params.getConstructor(String.class,String.class).newInstance(appId,secret);
-            detailRequest = detail.getConstructor(params);
-            setOrder = detail.getMethod("setOrder_id",String.class);
-            execute = detail.getMethod("doRequest");
-            result = loader.loadClass(BASE + "response.SgOpenResponse").getMethod("getRequestResult");
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-            loader.close();
-            throw e;
-        }
+            sign=loader.loadClass("com.sankuai.meituan.shangou.open.sdk.util.SignUtil").getMethod("genSig",String.class);
+        } catch (ReflectiveOperationException | LinkageError e) { loader.close(); throw e; }
     }
 
-    String fetch(String orderId) throws ReflectiveOperationException {
-        var request = detailRequest.newInstance(systemParam);
-        setOrder.invoke(request,orderId);
-        var response = execute.invoke(request);
-        return response == null ? null : (String)result.invoke(response);
+    String fetch(String orderId) throws ReflectiveOperationException,IOException,InterruptedException {
+        String query="app_id="+URLEncoder.encode(appId,StandardCharsets.UTF_8)+"&order_id="
+                +URLEncoder.encode(orderId,StandardCharsets.UTF_8)+"&timestamp="+Instant.now().getEpochSecond();
+        String url=ENDPOINT+"?"+query;
+        String signature=(String)sign.invoke(null,url+secret);
+        var request=HttpRequest.newBuilder(URI.create(url+"&sig="+signature)).timeout(Duration.ofSeconds(10)).GET().build();
+        var response=client.send(request,HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode()!=200) throw new IOException("Detail service returned HTTP "+response.statusCode());
+        return response.body();
     }
 
-    public void close() throws IOException { loader.close(); }
+    public void close() throws IOException { client.close(); loader.close(); }
 }

@@ -59,7 +59,7 @@ class AgentRunner {
         return drive(caseId,id,actor,steps,0,false);
     }
 
-    private boolean currentPosQuestion(String question) {
+    static boolean currentPosQuestion(String question) {
         String text = question.toLowerCase(Locale.ROOT);
         return (text.contains("现在") || text.contains("当前")) && (text.contains("pos") || text.contains("入库") || text.contains("有单"))
                 && List.of("为什么","原因","第一次","最初","首次","昨天","那次","后来","之前","当时","补单","补推","能补","要补")

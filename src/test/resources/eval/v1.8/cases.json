@@ -1,0 +1,119 @@
+[
+  {
+    "order": "810001",
+    "question": "当前 POS 有单吗？",
+    "group": "current",
+    "expected": "PRESENT",
+    "required": "P:FOUND",
+    "refLogs": 0,
+    "current": true
+  },
+  {
+    "order": "810002",
+    "question": "现在 POS 里有没有单？",
+    "group": "current",
+    "expected": "ABSENT",
+    "required": "P:NOT_FOUND",
+    "refLogs": 0,
+    "current": true
+  },
+  {
+    "order": "810003",
+    "question": "当前 POS 有单吗？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "P:TIMEOUT",
+    "refLogs": 0,
+    "current": true
+  },
+  {
+    "order": "810004",
+    "question": "现在 POS 有单吗？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "P:DENIED",
+    "refLogs": 0,
+    "current": true
+  },
+  {
+    "order": "810005",
+    "question": "首次回传的处理结果是什么？",
+    "group": "history",
+    "expected": "MAPPING",
+    "required": "W:PUSH-A:门店映射",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810006",
+    "question": "后来补单的处理结果是什么？",
+    "group": "history",
+    "expected": "SUCCESS",
+    "required": "W:REPAIR-B:成功",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810007",
+    "question": "首次回传的结果是什么？",
+    "group": "history",
+    "expected": "LOCK",
+    "required": "W:PUSH-A:锁等待",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810008",
+    "question": "第一次回传的结果是什么？",
+    "group": "history",
+    "expected": "DUPLICATE",
+    "required": "W:PUSH-A:已存在",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810009",
+    "question": "第一次回传的处理结果是什么？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "S:POS_WRITER:NO_MATCH",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810010",
+    "question": "首次回传结果是什么？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "S:POS_WRITER:TIMEOUT",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810011",
+    "question": "第一次回传结果是什么？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "S:POS_WRITER:NO_MATCH",
+    "refLogs": 2,
+    "current": false
+  },
+  {
+    "order": "810012",
+    "question": "首次回传结果是什么？",
+    "group": "insufficient",
+    "expected": "UNKNOWN",
+    "required": "S:GATEWAY:NO_MATCH",
+    "refLogs": 1,
+    "current": false
+  },
+  {
+    "order": "810013",
+    "question": "第一次回传的处理结果是什么？",
+    "group": "history",
+    "expected": "LEDGER",
+    "required": "W:PUSH-A:流水不同",
+    "refLogs": 2,
+    "current": false
+  }
+]

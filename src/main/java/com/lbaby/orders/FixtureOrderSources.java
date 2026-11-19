@@ -18,9 +18,9 @@ class FixtureOrderSources implements OrderSources {
 
     private final SandboxPos sandbox;
 
-    FixtureOrderSources(ObjectMapper mapper, SandboxPos sandbox) throws IOException {
+    FixtureOrderSources(ObjectMapper mapper, SandboxPos sandbox, @org.springframework.beans.factory.annotation.Value("${fixture.orders:fixtures/v1.1/orders.json}") String fixturePath) throws IOException {
         this.sandbox = sandbox;
-        var fixtures = new ClassPathResource("fixtures/v1.1/orders.json");
+        var fixtures = new ClassPathResource(fixturePath);
         try (var input = fixtures.getInputStream()) {
             orders = Arrays.stream(mapper.readValue(input, Order[].class))
                     .collect(Collectors.toUnmodifiableMap(Order::orderId, Function.identity()));

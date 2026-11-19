@@ -6,13 +6,22 @@ import java.sql.SQLTimeoutException;
 import java.time.Instant;
 
 /** One InnoDB consistent read across the payment and sale ledgers. */
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Profile("pos-shadow")
 class PosShadowLookup {
     enum Status { FOUND, NOT_FOUND, PARTIAL, DENIED, TIMEOUT, UNAVAILABLE }
     record Observation(String orderId, Status status, Boolean payExists, Boolean saleExists, Instant observedAt) {
+        @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
         public String getSource() { return "LOCAL_MYSQL_MTJD"; }
     }
 
     private final DataSource db;
+    @org.springframework.beans.factory.annotation.Autowired
+    PosShadowLookup(@org.springframework.beans.factory.annotation.Value("${POS_DB_PASSWORD}") String password) {
+        this(new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                "jdbc:mysql://127.0.0.1:3306/mtjd?connectTimeout=3000&socketTimeout=6000","onlyselect",password));
+    }
+
     PosShadowLookup(DataSource db) { this.db = db; }
 
     Observation query(String orderId) {

@@ -81,3 +81,11 @@ CREATE TABLE IF NOT EXISTS repair_execution (
     pos_result VARCHAR(32), checked_at TIMESTAMP WITH TIME ZONE, checked_by VARCHAR(64),
     UNIQUE(environment,channel,active_order)
 );
+
+CREATE TABLE IF NOT EXISTS shadow_work_order (
+    id UUID PRIMARY KEY, order_id VARCHAR(64) NOT NULL, version INT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS shadow_work_turn (
+    case_id UUID NOT NULL REFERENCES shadow_work_order(id), turn_no INT NOT NULL,
+    details CLOB NOT NULL, PRIMARY KEY(case_id,turn_no)
+);

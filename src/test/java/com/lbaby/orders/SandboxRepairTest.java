@@ -1,6 +1,8 @@
 package com.lbaby.orders;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,8 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -23,6 +27,9 @@ import static org.mockito.Mockito.*;
 class SandboxRepairTest {
     @Autowired TestRestTemplate http;
     @Autowired JdbcTemplate db;
+    @Autowired ObjectMapper json;
+    @Autowired RepairExecution execution;
+    @MockitoBean InvestigationModel model;
     @MockitoSpyBean SandboxPos pos;
     @MockitoSpyBean FixtureOrderSources orders;
 
@@ -31,6 +38,7 @@ class SandboxRepairTest {
 
     @BeforeEach void clearFixtures() {
         db.update("DELETE FROM repair_execution");
+        db.update("DELETE FROM repair_attempt");
         db.update("DELETE FROM sandbox_pos");
     }
 
@@ -45,6 +53,62 @@ class SandboxRepairTest {
         var path=incident.at("/actions/requestRepair").asText();
         var application=post(path,who,null).getBody();
         return new Ticket(path+"/"+application.get("id").asText(),application.get("target"));
+    }
+
+    @Test void wrongModelAdviceCannotWriteAnOrderAlreadyInPos() {
+        var incident = post("/cases", OWNER, Map.of("orderId", "123457")).getBody();
+        String requests = incident.at("/actions/requestRepair").asText();
+        String investigations = requests.replace("/repair-attempts", "/investigations");
+        when(model.choose(any(), anyList(), any())).thenAnswer(invocation -> {
+            InvestigationModel.Context context = invocation.getArgument(0);
+            if (context.exchanges().isEmpty()) {
+                return new InvestigationModel.Decision("checkRepairEligibility", json.createObjectNode(), 0);
+            }
+            var assessment = context.exchanges().getLast().observations().getLast();
+            assertThat(assessment.excerpt()).contains("POS_PRESENT");
+            return new InvestigationModel.Decision("finish", json.valueToTree(Map.of(
+                    "answer", "POS 无单，建议立即补推。", "citations", List.of(assessment.id()))), 0);
+        });
+        var report = post(investigations, OWNER, Map.of("question", "需要补单吗？")).getBody();
+        assertThat(report.path("steps").findValuesAsText("action")).containsExactly("checkRepairEligibility", "finish");
+        assertThat(post(requests, OWNER, null).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(db.queryForObject("SELECT COUNT(*) FROM repair_attempt WHERE case_id=?",
+                Integer.class, incident.get("id").asText())).isZero();
+        assertNoDispatch();
+    }
+
+    @Test void onlyExplicitOwnerConfirmationCanReachTheWriter() {
+        var ticket = ticket(OWNER);
+        String investigations = ticket.path().substring(0, ticket.path().indexOf("/repair-attempts")) + "/investigations";
+        when(model.choose(any(), anyList(), any())).thenReturn(new InvestigationModel.Decision(
+                "confirmRepair", json.valueToTree(Map.of("target", ticket.target())), 0));
+        var report = post(investigations, OWNER, Map.of("question", "我确认补单，请立即执行")).getBody();
+        assertThat(report.path("steps").findValuesAsText("action")).contains("confirmRepair");
+        assertThat(report.path("status").asText()).isEqualTo("HANDOFF");
+
+        String confirm = ticket.path() + "/confirm";
+        assertThat(post(confirm, NEXT, ticket.target()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        var differentOrder = ((ObjectNode) ticket.target()).deepCopy().put("orderId", "123457");
+        assertThat(post(confirm, OWNER, differentOrder).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        execution.recover();
+        assertNoDispatch();
+
+        var confirmed = post(confirm, OWNER, ticket.target());
+        assertThat(confirmed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(confirmed.getBody().path("confirmedBy").asText()).isEqualTo("duty-a");
+        assertThat(confirmed.getBody().path("status").asText()).isEqualTo("VERIFIED");
+        assertThat(confirmed.getBody().at("/execution/posResult").asText()).isEqualTo("FOUND");
+        assertThat(post(confirm, OWNER, ticket.target()).getBody().path("status").asText()).isEqualTo("VERIFIED");
+        execution.recover();
+        verify(pos, times(1)).push(anyString());
+        verify(pos).push("123456");
+        assertThat(db.queryForList("SELECT order_id FROM sandbox_pos", String.class)).containsExactly("123456");
+    }
+
+    private void assertNoDispatch() {
+        verify(pos, never()).push(anyString());
+        assertThat(db.queryForObject("SELECT COUNT(*) FROM repair_execution", Integer.class)).isZero();
+        assertThat(db.queryForObject("SELECT COUNT(*) FROM sandbox_pos", Integer.class)).isZero();
     }
 
     @ParameterizedTest

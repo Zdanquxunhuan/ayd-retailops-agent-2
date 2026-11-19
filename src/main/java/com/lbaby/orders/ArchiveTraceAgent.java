@@ -57,6 +57,10 @@ class ArchiveTraceAgent {
                     coverage.files(),coverage.filesCompleted());
             attempts=tracker.sorted();
         }
+        return summarize(coverage,attempts,planner,action);
+    }
+
+    Report summarize(PushArchiveLookup.Coverage coverage,List<PushAttemptTrace.Attempt> attempts,String planner,String action) {
         int total=attempts.size();
         if (action.equals("latestFailure") || action.equals("compareFailures"))
             attempts=attempts.stream().filter(a->a.serviceOutcome().equals("REPORTED_FAILURE")).toList();

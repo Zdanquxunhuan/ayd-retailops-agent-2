@@ -20,6 +20,7 @@ class MeituanShadowLookup implements AutoCloseable {
                  INVALID_RESPONSE, NOT_CONFIGURED, TIMEOUT, UNAVAILABLE }
     record Fact(State state, Integer status, String appPoiCode, Instant completedAt, List<Integer> errorCodes,
                 String requestId, Instant observedAt) {
+        @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
         public String getSource() { return "MEITUAN_ORDER_DETAIL"; }
     }
 
@@ -37,9 +38,12 @@ class MeituanShadowLookup implements AutoCloseable {
         if (sdk==null) return failure(State.NOT_CONFIGURED);
         try {
             return parse(json,orderId,sdk.fetch(orderId));
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return failure(State.UNAVAILABLE);
+        } catch (IOException | ReflectiveOperationException | RuntimeException | LinkageError e) {
             for (Throwable t=e;t!=null;t=t.getCause())
-                if (t instanceof SocketTimeoutException) return failure(State.TIMEOUT);
+                if (t instanceof SocketTimeoutException || t instanceof java.net.http.HttpTimeoutException) return failure(State.TIMEOUT);
             return failure(State.UNAVAILABLE);
         }
     }

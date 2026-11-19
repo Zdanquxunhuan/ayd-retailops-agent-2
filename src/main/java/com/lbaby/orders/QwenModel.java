@@ -58,6 +58,11 @@ class QwenModel implements InvestigationModel {
         return choose(context,tools,timeout,SYSTEM);
     }
 
+    Decision selectCaseTool(String question,String previous,List<Map<String,Object>> tools) {
+        var ctx=new Context(question,"","",List.of(),List.of(),List.of(),1,previous);
+        return choose(ctx,tools,Duration.ofSeconds(12),"为只读工单选择一个工具。当前查不到单或询问当前状态选 CURRENT。查询历史即使订单已恢复仍选历史工具。根据上一轮理解指代，区分 FIRST、LATEST、COMPARE、LATEST_FAILURE、COMPARE_FAILURES。无法判断选 CLARIFY。");
+    }
+
     Decision selectArchiveTool(String question,List<Map<String,Object>> tools) {
         var context=new Context(question,"","",List.of(),List.of(),List.of(),1,"");
         return choose(context,tools,Duration.ofSeconds(12),
