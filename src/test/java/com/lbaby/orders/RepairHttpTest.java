@@ -76,6 +76,7 @@ class RepairHttpTest {
         verify(orders).storeOf("123456");
         verify(orders).queryPos("123456");
         verify(orders).queryMeituan("123456");
+        verify(orders).posEvidenceSource();
         verifyNoMoreInteractions(orders);
         verifyNoInteractions(model);
     }

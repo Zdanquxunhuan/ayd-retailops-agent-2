@@ -20,7 +20,20 @@ class PushArchiveLookup {
     record Coverage(LocalDate date, Instant observedAt, Status status, List<String> files, int filesCompleted) {}
     record Line(String file, long line, String kind, String logTime, List<String> markers) {}
     record Report(String source, LocalDate date, Instant observedAt, Status status,
-                  List<String> files, int filesCompleted, List<Line> lines) {}
+                  List<String> files, int filesCompleted, List<Line> lines) {
+        @com.fasterxml.jackson.annotation.JsonProperty("message")
+        public String message() {
+            return switch (status) {
+                case MATCHES -> "在已到达的归档中命中订单，详见文件名和行号。";
+                case NO_ARCHIVES -> "目录中暂无该日期的归档，可能尚未到达或已过保留期。";
+                case NO_MATCH -> "在已到达并完成扫描的归档中未命中订单。";
+                case READ_ERROR -> "无法完整读取归档，请检查挂载、文件权限和压缩文件完整性。";
+                case TRUNCATED -> "扫描达到限制，仅展示已读取的范围。";
+                case NOT_CONFIGURED -> "归档路径尚未配置。";
+                case SCANNED -> "归档扫描完成。";
+            };
+        }
+    }
 
     private static final Pattern TIME=Pattern.compile("^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3})");
     private static final List<String> MARKERS=List.of("pushFinishedOrder","MeituanController","MeituanServiceImpl",
@@ -28,8 +41,8 @@ class PushArchiveLookup {
             "MySQLTransactionRollbackException","SocketTimeoutException","订单已存在");
     private final Path source;
 
-    PushArchiveLookup(@Value("${PUSH_LOG_ARCHIVE:}") String path) {
-        source=path.isBlank() ? null : Path.of(path);
+    PushArchiveLookup(@Value("${PUSH_LOG_ARCHIVE:./logs}") String path) {
+        source=path.isBlank() ? null : Path.of(path).toAbsolutePath().normalize();
     }
 
     Report search(LocalDate date,String order) {

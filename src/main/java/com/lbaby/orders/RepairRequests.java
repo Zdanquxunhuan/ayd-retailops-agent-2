@@ -44,14 +44,14 @@ class RepairRequests {
 
     RepairRequests(JdbcTemplate db, IncidentCases cases, RepairEligibility eligibility, CaseEvidence evidence,
                    @Value("${repair.fixture-environment:local}") String fixtureEnvironment,
-                   @Value("${repair.confirmation-ttl:PT10M}") Duration ttl, SandboxPos sandbox) {
+                   @Value("${repair.confirmation-ttl:PT10M}") Duration ttl, SynchronousRepair writer) {
         if (!fixtureEnvironment.matches("[a-zA-Z0-9_-]{1,48}") || ttl.isZero() || ttl.isNegative())
             throw new IllegalArgumentException("Invalid repair environment or confirmation TTL");
         this.db = db;
         this.cases = cases;
         this.eligibility = eligibility;
         this.evidence = evidence;
-        this.environment = sandbox.enabled() ? sandbox.environment() : "fixture:" + fixtureEnvironment;
+        this.environment = writer.enabled() ? writer.environment() : "fixture:" + fixtureEnvironment;
         this.ttl = ttl;
     }
 

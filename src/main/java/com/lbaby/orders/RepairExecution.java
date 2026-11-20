@@ -26,21 +26,20 @@ class RepairExecution {
     private final RepairEligibility eligibility;
     private final OrderSources orders;
     private final SynchronousRepair writer;
-    private final SandboxPos sandbox;
     private final JdbcTemplate db;
     private final TransactionTemplate tx;
     private final CaseEvidence evidence;
 
     RepairExecution(RepairRequests repairs, IncidentCases cases, RepairEligibility eligibility, OrderSources orders,
-                    SynchronousRepair writer, SandboxPos sandbox, JdbcTemplate db, TransactionTemplate tx,
+                    SynchronousRepair writer, JdbcTemplate db, TransactionTemplate tx,
                     CaseEvidence evidence) {
         this.repairs=repairs; this.cases=cases; this.eligibility=eligibility; this.orders=orders;
-        this.writer=writer; this.sandbox=sandbox; this.db=db; this.tx=tx;
+        this.writer=writer; this.db=db; this.tx=tx;
         this.evidence=evidence;
     }
 
     RepairRequests.Attempt afterConfirmation(RepairRequests.Attempt attempt, DemoIdentity actor) {
-        if (!sandbox.enabled() || attempt.status()!=RepairRequests.Status.PENDING_EXECUTION) return attempt;
+        if (!writer.enabled() || attempt.status()!=RepairRequests.Status.PENDING_EXECUTION) return attempt;
         dispatch(new Job(attempt.caseId(),attempt.id(),actor));
         return repairs.read(attempt.caseId(),attempt.id(),actor);
     }
@@ -56,7 +55,7 @@ class RepairExecution {
         }
         if (order==null) return;
         SynchronousRepair.Reply reply;
-        try { reply=writer.push(order); }
+        try { reply=writer.pushConfirmed(job.id(),order); }
         catch (RuntimeException uncertain) { reply=SynchronousRepair.Reply.UNKNOWN; }
         db.update("UPDATE repair_execution SET call_result=? WHERE attempt_id=?",reply.name(),job.id());
         tx.executeWithoutResult(s -> reconcile(job,job.actor().name()));
@@ -69,7 +68,7 @@ class RepairExecution {
                 AND store_id=? AND status='PENDING_EXECUTION' FOR UPDATE
                 """,(r,i) -> new Binding(r.getString("order_id"),r.getString("channel"),
                         r.getTimestamp("expires_at").toInstant(),r.getString("action")),job.id(),job.caseId(),
-                sandbox.environment(),job.actor().name(),job.actor().storeId());
+                writer.environment(),job.actor().name(),job.actor().storeId());
         if (rows.isEmpty() || hasExecution(job.id())) return null;
         var data=rows.getFirst();
         String order=data.order(), channel=data.channel(), reason;
@@ -91,7 +90,7 @@ class RepairExecution {
         db.update("""
                 INSERT INTO repair_execution(attempt_id,environment,channel,active_order,phase,precondition,
                 call_result,pos_result,checked_at,checked_by) VALUES(?,?,?,?,?,?,?,?,?,?)
-                """,job.id(),sandbox.environment(),channel,invoke ? order : null,phase,reason,
+                """,job.id(),writer.environment(),channel,invoke ? order : null,phase,reason,
                 invoke ? "UNKNOWN" : "SKIPPED",found ? "FOUND" : null,Instant.now(),job.actor().name());
         return invoke ? order : null;
     }
@@ -112,7 +111,7 @@ class RepairExecution {
         var active=db.query("""
                 SELECT active_order FROM repair_execution WHERE attempt_id=? AND environment=?
                 AND active_order IS NOT NULL FOR UPDATE
-                """,(r,i) -> r.getString(1),job.id(),sandbox.environment());
+                """,(r,i) -> r.getString(1),job.id(),writer.environment());
         if (active.isEmpty()) return;
         String order=active.getFirst();
         String pos;
@@ -122,7 +121,7 @@ class RepairExecution {
         } catch (RuntimeException unavailable) { pos="UNAVAILABLE"; }
         boolean found=pos.equals("FOUND");
         var now=Instant.now();
-        evidence.save(job.caseId(),UUID.randomUUID().toString(),"SANDBOX_POS","VERIFICATION",
+        evidence.save(job.caseId(),UUID.randomUUID().toString(),writer.evidenceSource(),"VERIFICATION",
                 job.id().toString(),null,now,reviewer+" / "+pos);
         db.update("""
                 UPDATE repair_execution SET phase=?,active_order=?,pos_result=?,checked_at=?,checked_by=?
@@ -132,15 +131,15 @@ class RepairExecution {
 
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
-        if (!sandbox.enabled()) return;
+        if (!writer.enabled()) return;
         var jobs=db.query("""
                 SELECT a.* FROM repair_attempt a LEFT JOIN repair_execution e ON a.id=e.attempt_id
                 WHERE a.environment=? AND a.status='PENDING_EXECUTION' AND
                 (e.attempt_id IS NULL OR e.active_order IS NOT NULL)
                 """,(r,i) -> new Job(r.getObject("case_id",UUID.class),r.getObject("id",UUID.class),
-                        new DemoIdentity(r.getString("confirmed_by"),r.getString("store_id"))),sandbox.environment());
+                        new DemoIdentity(r.getString("confirmed_by"),r.getString("store_id"))),writer.environment());
         for (var job : jobs) {
-            if (hasExecution(job.id())) tx.executeWithoutResult(s -> reconcile(job,"sandbox-recovery"));
+            if (hasExecution(job.id())) tx.executeWithoutResult(s -> reconcile(job,writer.environment().split(":",2)[0]+"-recovery"));
             else dispatch(job);
         }
     }

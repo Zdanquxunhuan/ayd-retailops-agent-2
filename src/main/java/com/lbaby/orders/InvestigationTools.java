@@ -67,7 +67,7 @@ class InvestigationTools {
             fields(args);
             boolean pos = action.equals("queryPosOrder");
             String status = pos ? orders.queryPos(scope.orderId()).name() : orders.queryMeituan(scope.orderId()).name();
-            return List.of(evidence.save(caseId, UUID.randomUUID().toString(), pos ? "POS_FIXTURE" : "MEITUAN_FIXTURE",
+            return List.of(evidence.save(caseId, UUID.randomUUID().toString(), pos ? orders.posEvidenceSource() : "MEITUAN_FIXTURE",
                     "SNAPSHOT", null, null, java.time.Instant.now(), status));
         }
         UUID anchor = null;

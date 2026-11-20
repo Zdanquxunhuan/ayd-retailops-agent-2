@@ -15,6 +15,7 @@ class PosShadowLookup {
         public String getSource() { return "LOCAL_MYSQL_MTJD"; }
     }
 
+    // 预检查单固定读取本机 mtjd，app_poi_code 仅作门店信息。
     private final DataSource db;
     @org.springframework.beans.factory.annotation.Autowired
     PosShadowLookup(@org.springframework.beans.factory.annotation.Value("${POS_DB_PASSWORD}") String password) {

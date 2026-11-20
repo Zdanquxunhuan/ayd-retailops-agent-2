@@ -1,7 +1,22 @@
-# 美团订单回传 POS 排障 · V1.8
+# 美团订单回传 POS 排障 · V1.9.2
 
 [同案 A/B/C 评测、回放命令与实测报告](eval/README.md)
 
+
+## V1.9.2 受控补推测试环境
+
+`repair-lab` 使用本机两个独立 JVM。工单侧由 JDK 21 运行；业务侧从推送工程源码重新编译 `MeituanServiceImpl`，用 JDK 17 运行，保持 Java 8 业务类的编译目标。业务侧不启动原工程的 Spring 容器。合成的已完成订单含一个销售商品和一个赠品。退款详情和赠品查询使用本地替身，业务方法生成的销售与支付流水通过测试写入器落到独立 H2 库。
+
+确认入口沿用 `/cases/{caseId}/repair-attempts/{id}/confirm`。业务侧只接收申请 UUID，使用测试服务身份回读当前获准执行的目标；校验渠道、动作、门店、订单及确认有效期。普通运维凭据不能调用业务入口。业务侧持久化已领取的申请编号。POS 回查按门店和订单分别检查两张流水；单边存在阻止新申请，返回 OK 后仍缺流水则进入待核验。已发出请求的申请恢复时只做查询。
+
+在项目根目录运行：
+
+~~~powershell
+.\project-mvn.cmd -o -B -ntp package
+python -B integration/repair-lab/accept.py
+~~~
+
+验收脚本默认使用本机已有的推送项目及其编译输出、项目本地 JDK 和 Maven 缓存。其他机器可设置 `PUSH_MODULE`、`PUSH_M2`、`LAB_JDK`、`AGENT_JDK`、`LAB_MVN`。脚本生成一次性测试服务令牌，仅监听回环地址，并在临时目录建立案件与流水库。诊断输出在 `target/repair192/`。测试覆盖成功、写成功后丢失响应、门店映射缺失返回 OK 、单边流水及申请后原单自行到账，检查业务调用次数、支付和销售行数，以及重复确认、重启、再次核验后的状态。生产 IAM、真实分库路由和外部渠道联调独立验收。
 
 ## 统一只读工单
 
@@ -28,10 +43,17 @@
 
 需要模型选择工具时，可附上 `"plannerQuestion":"最近那次处理结果怎么样？"`。这段提问会交给已配置的百炼规划器，请只填写调查意图。程序替换其中的数字，订单参数、归档内容及扫描结果均留在本机。模型可选择最早、最近、对比或澄清，服务端仅接受这些动作，以实际行号和固定业务消息生成答复。模型不可用时返回本地对比结果，`planner` 字段标记降级。最早与最近均限于已读样本；时间戳相同的候选会一起返回。
 
-在启动 `pos-shadow` 服务前，设置 `$env:PUSH_LOG_ARCHIVE` 为单个归档的绝对路径，或设为运维已获准读取的归档目录。支持来自 `/data/service/b-push-center-server/logs` 的 `b-push-center-server.log.YYYY-MM-DD.*.gz`。本机可直接查已拷贝的文件。
+V1.9.1 默认读取启动工作目录的 `./logs/`。从项目根启动即可。目录及真实样本排除在 Git 之外。换挂载点时，在启动前把 `PUSH_LOG_ARCHIVE` 设为目录绝对路径（仍兼容单个归档）。投放端和服务端使用各自的系统身份，给服务端目录读取、列举权限；容器可将宿主机归档目录只读挂载到该路径。Java 查询端只读，原始行保留在归档里。
+
+运维投放端用 Python 3.8+ 执行下列命令。日常投放读取已落盘的文件，先复制到目标目录的临时文件，校验 gzip 后发布。同名且内容相同可重复投放，同名冲突会报错。按上海业务日保留当天和前四天的所有分片，每次日常投放都会清理目标目录中已过期的匹配文件。每日采集任务应在归档到达后执行一次；即使没有新分片，也可以用空的来源目录执行清理。首次用历史样本联调时，`--replay` 可投放一份过期样本，下次日常投放仍会正常清理它。
 
 ~~~powershell
-$env:PUSH_LOG_ARCHIVE='F:\ayd\b-push-center-server.log.2026-11-11.2.gz'
+# 日常投放：把源目录替换为本机已收到归档的目录
+python scripts/sync_push_logs.py F:\archive-inbox
+# 单独回放本次样本
+python scripts/sync_push_logs.py F:\ayd\b-push-center-server.log.2026-11-11.2.gz --replay
+# 换挂载点时，投放端加 --destination；服务启动前设置同一路径
+# $env:PUSH_LOG_ARCHIVE='F:\mounted-push-logs'
 # 启动服务后，在同一会话执行
 Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -Headers @{Authorization="Bearer $env:POS_SHADOW_TOKEN"} -ContentType 'application/json' -Body '{"orderId":"3302392674020451666","date":"2026-11-11"}'
 ~~~
@@ -55,6 +77,8 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -H
 
 ## 本机 MySQL 只读查单
 
+V1.9.3 预检固定按订单号读取本机 `mtjd`。美团详情中的 `app_poi_code` 仅作门店信息展示；“未查到”指本机库的支付和销售流水均无记录。
+
 `pos-shadow` 模式供可跨店查单的本机运维按订单号核实 POS。返回来源、查询时间、支付与销售流水是否存在。两个存在标志来自同一条参数化 SELECT。两者均存在为 `FOUND`，均不存在为 `NOT_FOUND`，仅一者存在为 `PARTIAL`，需要人工核对。连接错误、授权失败或超时返回 5xx，两个存在标志均为空。当前接入范围是 `127.0.0.1:3306/mtjd` 的 `t_rm_payflow_frommail.mail_orderid` 和 `t_rm_saleflow_frommail.mail_orderid`。
 
 在 PowerShell 中运行以下命令。令牌在当前会话生成，数据库口令在提示符输入。先用项目脚本完成打包。
@@ -63,7 +87,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/logs' -Method Post -H
 .\project-mvn.cmd package
 $env:POS_DB_PASSWORD = [Net.NetworkCredential]::new('',(Read-Host '本机 MySQL 只读口令' -AsSecureString)).Password
 $env:POS_SHADOW_TOKEN = [guid]::NewGuid().ToString('N')
-$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.8.0.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
+$app = Start-Process 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -ArgumentList '-jar','target/order-investigator-1.9.2.jar','--spring.profiles.active=pos-shadow' -WindowStyle Hidden -PassThru
 ~~~
 
 服务启动后在同一 PowerShell 中查询，结束时使用 `Stop-Process -Id $app.Id`。
@@ -85,7 +109,7 @@ Invoke-RestMethod 'http://127.0.0.1:8081/pos-shadow/orders/check' -Method Post -
 .\project-mvn.cmd spring-boot:run
 ~~~
 
-`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.8.0.jar`。
+`project-mvn.cmd` 通过 `setlocal` 将 JDK 选择限定在本次 Maven 进程及其子进程。用 `.\project-mvn.cmd -version` 核对 Java 版本与路径。若直接运行已打包的 JAR，在 PowerShell 使用 `& 'F:\ayd\order-project-jdk21\jdk-21.0.13+9\bin\java.exe' -jar target/order-investigator-1.9.2.jar`。
 
 默认监听 127.0.0.1:8080。案件库在工作目录 data 下，重启时使用同一工作目录。Maven 测试使用独立内存库。演示令牌用于本机模拟门店身份，实际运维身份系统留待真实只读接入阶段。
 

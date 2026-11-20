@@ -7,8 +7,11 @@ import org.springframework.stereotype.Component;
 
 /** Synchronous domain call. Returning SUCCESS means the sandbox POS transaction has committed. */
 interface SynchronousRepair {
-    enum Reply { SUCCESS, DUPLICATE, TIMEOUT, UNKNOWN }
-    Reply push(String orderId);
+    enum Reply { SUCCESS, DUPLICATE, TIMEOUT, UNKNOWN, ACKNOWLEDGED }
+    boolean enabled();
+    String environment();
+    String evidenceSource();
+    Reply pushConfirmed(java.util.UUID attempt, String orderId);
 }
 
 @Component
@@ -28,14 +31,17 @@ class SandboxPos implements SynchronousRepair {
         this.scenario = scenario;
     }
 
-    boolean enabled() { return enabled; }
-    String environment() { return environment; }
+    public boolean enabled() { return enabled; }
+    public String environment() { return environment; }
 
     boolean contains(String orderId) {
         return enabled && Boolean.TRUE.equals(db.queryForObject(
                 "SELECT EXISTS(SELECT 1 FROM sandbox_pos WHERE environment=? AND order_id=?)",
                 Boolean.class,environment,orderId));
     }
+
+    public String evidenceSource() { return "SANDBOX_POS"; }
+    public Reply pushConfirmed(java.util.UUID attempt, String orderId) { return push(orderId); }
 
     public Reply push(String orderId) {
         if (!enabled) throw new IllegalStateException("Sandbox disabled");

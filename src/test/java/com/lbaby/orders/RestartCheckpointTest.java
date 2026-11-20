@@ -31,13 +31,15 @@ class RestartCheckpointTest {
     static class ReplayConfiguration {
         @Bean @Primary
         SynchronousRepair interruptedWriter(SandboxPos pos) {
-            return order -> {
-                var reply=pos.push(order);
+            var writer = org.mockito.Mockito.mock(SynchronousRepair.class, org.mockito.AdditionalAnswers.delegatesTo(pos));
+            org.mockito.Mockito.doAnswer(call -> {
+                var reply=pos.push(call.getArgument(1));
                 System.out.println("SANDBOX_WRITE_COMMITTED");
                 try { new java.util.concurrent.CountDownLatch(1).await(); }
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 return reply;
-            };
+            }).when(writer).pushConfirmed(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString());
+            return writer;
         }
         @Bean @Primary
         InvestigationModel replayPlanner() {
